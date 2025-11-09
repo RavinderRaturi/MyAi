@@ -1,0 +1,49 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Build outputs
+bin/
+obj/
+TestResults/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+
+# Visual Studio Code
+.vscode/
+
+# ASP.NET / user secrets and local config
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+secrets.*
+
+# Roslyn
+*.ide.*
+
+# DotNet cache and temp
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# publish output
+publish/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# node
+node_modules/
