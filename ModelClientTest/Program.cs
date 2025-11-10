@@ -2,8 +2,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAi.Core.Services;
 using MyAi.Infrastructure.Services;
+using Microsoft.Extensions.Configuration;
 
 var services = new ServiceCollection();
+
+
+ 
+
 
 services.AddHttpClient<IModelClient, LocalModelClient>(c =>
 {
@@ -22,6 +27,6 @@ var sp = services.BuildServiceProvider();
 var client = sp.GetRequiredService<IModelClient>();
 
 Console.WriteLine("Sending prompt...");
-var result = await client.GenerateAsync("Say hello in one sentence.");
+var result = await client.GenerateAsync("Just greet me in any language other than English. also name the language. I need only one example.");
 Console.WriteLine("Model output:");
 Console.WriteLine(result.Text);

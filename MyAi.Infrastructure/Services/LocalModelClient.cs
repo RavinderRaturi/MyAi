@@ -12,8 +12,9 @@ namespace MyAi.Infrastructure.Services
     {
         private readonly HttpClient _http;
         private readonly string _model;
+        private const string defaultModel = "phi4";
 
-        public LocalModelClient(HttpClient httpClient, string model = "llama3.2")
+        public LocalModelClient(HttpClient httpClient, string model = defaultModel)
         {
             _http = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _model = model;
@@ -33,7 +34,7 @@ namespace MyAi.Infrastructure.Services
                     return new ModelResponse { Text = content.GetString() ?? string.Empty };
             }
 
-            if (doc.RootElement.TryGetProperty("text", out var textProp))
+            if (doc.RootElement.TryGetProperty("response", out var textProp))
                 return new ModelResponse { Text = textProp.GetString() ?? string.Empty };
 
             return new ModelResponse { Text = doc.RootElement.ToString() };
