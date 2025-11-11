@@ -16,4 +16,11 @@
     <ProjectReference Include="..\MyAi.Infrastructure\MyAi.Infrastructure.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+		<Content Include="prompts\**\*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+
 </Project>

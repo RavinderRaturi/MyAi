@@ -27,6 +27,13 @@ var sp = services.BuildServiceProvider();
 var client = sp.GetRequiredService<IModelClient>();
 
 Console.WriteLine("Sending prompt...");
-var result = await client.GenerateAsync("Just greet me in any language other than English. also name the language. I need only one example.");
+
+var clientOptions = new ModelRequestOptions
+{
+    Temperature = 0.7,
+    MaxTokens = 100,
+};
+
+var result = await client.GenerateAsync("Just greet me in 3 language other than English. also name the language. I need only one example.", clientOptions);
 Console.WriteLine("Model output:");
 Console.WriteLine(result.Text);

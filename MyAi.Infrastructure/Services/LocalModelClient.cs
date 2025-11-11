@@ -1,7 +1,10 @@
-﻿using MyAi.Core.Services;
+﻿using Microsoft.Extensions.Logging;
+using MyAi.Core.Services;
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,33 +14,53 @@ namespace MyAi.Infrastructure.Services
     public class LocalModelClient : IModelClient
     {
         private readonly HttpClient _http;
-        private readonly string _model;
-        private const string defaultModel = "phi4";
+ 
+        private readonly ILogger<LocalModelClient> _logger;
+        public string Name => "phi4";
 
-        public LocalModelClient(HttpClient httpClient, string model = defaultModel)
+        public LocalModelClient(HttpClient httpClient, ILogger<LocalModelClient> logger)
         {
             _http = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _model = model;
+    
+            _logger = logger;
         }
 
-        public async Task<ModelResponse> GenerateAsync(string prompt, CancellationToken ct = default)
+        public async Task<ModelResponse> GenerateAsync(string prompt, ModelRequestOptions options, CancellationToken ct = default)
         {
-            var payload = new { model = _model, prompt = prompt, stream = false };
-            var httpRes = await _http.PostAsJsonAsync("/api/generate", payload, ct);
-            httpRes.EnsureSuccessStatusCode();
-            using var doc = await JsonDocument.ParseAsync(await httpRes.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            var sw = Stopwatch.StartNew();
+            var est = TokenEstimator.Estimate(prompt);
+            var payload = new { model = Name, prompt, temperature = options.Temperature, max_tokens = options.MaxTokens };
+            var json = JsonSerializer.Serialize(payload);
+            var resp = await _http.PostAsync("/api/generate", new StringContent(json, Encoding.UTF8, "application/json"), ct);
+            resp.EnsureSuccessStatusCode();
 
-            if (doc.RootElement.TryGetProperty("output", out var output) && output.ValueKind == JsonValueKind.Array && output.GetArrayLength() > 0)
+            var sb = new StringBuilder();
+
+            using var stream = await resp.Content.ReadAsStreamAsync(ct);
+            using var reader = new StreamReader(stream);
+
+            while (!reader.EndOfStream)
             {
-                var first = output[0];
-                if (first.TryGetProperty("content", out var content))
-                    return new ModelResponse { Text = content.GetString() ?? string.Empty };
+                var line = await reader.ReadLineAsync();
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                try
+                {
+                    using var doc = JsonDocument.Parse(line);
+                    if (doc.RootElement.TryGetProperty("response", out var res))
+                        sb.Append(res.GetString());
+                }
+                catch (JsonException)
+                {
+                    // skip malformed or partial lines
+                }
             }
 
-            if (doc.RootElement.TryGetProperty("response", out var textProp))
-                return new ModelResponse { Text = textProp.GetString() ?? string.Empty };
+            _logger.LogInformation("Provider:{Provider}, LatencyMs:{Ms}, TokenEst:{Est}", Name, sw.ElapsedMilliseconds, est);
 
-            return new ModelResponse { Text = doc.RootElement.ToString() };
+            return new ModelResponse { Text = sb.ToString() };
         }
+
     }
 }
